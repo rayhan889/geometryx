@@ -81,18 +81,18 @@ export function Calculator({
       <CardHeader>
         <CardTitle>Kalkulator</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-6">
+      <CardContent className="grid gap-5 p-4 sm:gap-6 sm:p-5">
         <Tabs
           value={kategori}
           onValueChange={(v) => pilihKategori(v as Kategori)}
         >
-          <TabsList className="w-full">
-            <TabsTrigger value="luas">Luas bangun datar</TabsTrigger>
-            <TabsTrigger value="volume">Volume bangun ruang</TabsTrigger>
+          <TabsList className="w-full flex-col sm:flex-row">
+            <TabsTrigger value="luas" className="h-auto min-h-11 border-r-0 border-b-[3px] py-2 whitespace-normal last:border-b-0 sm:border-r-[3px] sm:border-b-0 sm:last:border-r-0">Luas bangun datar</TabsTrigger>
+            <TabsTrigger value="volume" className="h-auto min-h-11 border-r-0 border-b-[3px] py-2 whitespace-normal last:border-b-0 sm:border-r-[3px] sm:border-b-0 sm:last:border-r-0">Volume bangun ruang</TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {SHAPES.filter((s) => s.kategori === kategori).map((s) => (
             <button
               key={s.id}
@@ -100,7 +100,7 @@ export function Calculator({
               aria-pressed={bentuk === s.id}
               onClick={() => pilihBentuk(s.id)}
               className={cn(
-                "grid justify-items-center gap-2 border-[3px] border-black bg-white px-2 py-4 text-sm font-extrabold transition-[transform,box-shadow] hover:bg-muted",
+                "grid min-w-0 content-start justify-items-center gap-2 border-[3px] border-black bg-white px-1 py-3 text-xs font-extrabold sm:px-2 sm:py-4 sm:text-sm transition-[transform,box-shadow] hover:bg-muted",
                 bentuk === s.id &&
                   (kategori === "luas" ? "bg-luas" : "bg-volume text-white") +
                     " translate-x-[-2px] translate-y-[-2px] shadow-hard-sm hover:bg-inherit",
@@ -109,16 +109,16 @@ export function Calculator({
               )}
             >
               <ShapeIcon id={s.id} />
-              <span className="text-center leading-tight">{short(s.nama)}</span>
+              <span className="text-center leading-tight break-words">{short(s.nama)}</span>
             </button>
           ))}
         </div>
 
         <form onSubmit={hitung} noValidate className="grid gap-5">
-          <p className="border-l-8 border-black pl-3 text-2xl font-black [font-variation-settings:'wdth'_125]">
+          <p className="border-l-8 border-black pl-3 text-xl font-black break-words sm:text-2xl [font-variation-settings:'wdth'_125]">
             {shape.rumusTeks}
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 min-[480px]:grid-cols-2">
             {shape.fields.map((f) => (
               <div key={f.key} className="grid gap-2">
                 <Label
@@ -160,21 +160,21 @@ export function Calculator({
           <div
             aria-live="polite"
             className={cn(
-              "grid gap-3 border-[3px] border-black p-5 shadow-hard",
+              "grid gap-3 border-[3px] border-black p-4 shadow-hard sm:p-5",
               kategori === "luas"
                 ? "bg-luas text-black"
                 : "bg-volume text-white",
             )}
           >
             <p className="font-bold">{shape.substitusi(hasil.input)}</p>
-            <p className="text-5xl leading-none font-black break-all [font-variation-settings:'wdth'_125] sm:text-6xl">
+            <p className="text-4xl leading-none font-black break-all [font-variation-settings:'wdth'_125] min-[480px]:text-5xl sm:text-6xl">
               {formatAngka(hasil.hasil)}{" "}
               <span className="text-2xl">{satuanHasil(kategori, satuan)}</span>
             </p>
             <Button
               onClick={tambah}
               variant="outline"
-              className="w-fit text-black"
+              className="w-full text-black sm:w-fit"
             >
               <Plus /> Tambahkan ke sesi
             </Button>
