@@ -1,0 +1,84 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/archivo/wdth.css";
+
+/* Brutalist, light only. Ink, paper, pencil yellow (luas) and ruler blue (volume). */
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Archivo Variable', 'Arial Narrow', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-luas: var(--luas);
+  --color-volume: var(--volume);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  --shadow-hard: 6px 6px 0 0 #000;
+  --shadow-hard-sm: 3px 3px 0 0 #000;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #ffe600;
+  --secondary-foreground: #000000;
+  --muted: #f0f0f0;
+  --muted-foreground: #4a4a4a;
+  --accent: #ffe600;
+  --accent-foreground: #000000;
+  --destructive: #e5001c;
+  --border: #000000;
+  --input: #000000;
+  --ring: #1f3bff;
+  --luas: #ffe600;
+  --volume: #1f3bff;
+  --radius: 0px;
+  color-scheme: light;
+}
+
+@layer base {
+  * { @apply border-border outline-ring; }
+  html { @apply font-sans; font-variation-settings: 'wdth' 100; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* graph paper */
+    background-image:
+      linear-gradient(to right, #00000014 1px, transparent 1px),
+      linear-gradient(to bottom, #00000014 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  h1, h2, h3 { font-variation-settings: 'wdth' 125; @apply font-black tracking-tight; }
+  button { @apply cursor-pointer; }
+  :focus-visible { outline: 4px solid var(--ring); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
