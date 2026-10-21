@@ -3,8 +3,12 @@ import { computeShape } from './shapes.ts'
 import { sortRecords } from './sort.ts'
 import { hitungStats } from './stats.ts'
 import { toCsv, toTxt } from './export.ts'
+import { toXlsx } from './xlsx.ts'
 import { mergeRecords, parseCsv } from './import.ts'
 import type { Calculation, SessionRecord } from '../types.ts'
+
+// Pengujian unit untuk rumus, pengurutan, statistik, serta ekspor/impor.
+// Jalankan dengan `bun run test`.
 
 describe('rumus', () => {
   it('menghitung luas dan volume', () => {
@@ -17,15 +21,18 @@ describe('rumus', () => {
   })
 })
 
+// Data contoh: satu hitungan luas (segitiga) dan satu volume (tabung)
 const calc = (id: string, bentuk: 'segitiga' | 'tabung'): Calculation => bentuk === 'segitiga'
   ? { id, kategori: 'luas', bentuk, input: { a: 6.5, t: 4 }, satuanPanjang: 'cm', rumus: 'L = ½ × a × t', hasil: 13, waktu: '2026-10-21T14:30:11.000+07:00' }
   : { id, kategori: 'volume', bentuk, input: { r: 7, t: 10 }, satuanPanjang: 'm', rumus: 'V = π × r² × t', hasil: computeShape('tabung', { r: 7, t: 10 }), waktu: '2026-10-21T14:31:40.000+07:00' }
 
+// Pembuat sesi siswa untuk data uji
 const rec = (id: string, nama: string, sekolah: string, umur: number, t: string, calcs: Calculation[]): SessionRecord => ({
   id, biodata: { nama, sekolah, kelas: '8A', umur, jenisKelamin: 'L', nis: '' },
   calculations: calcs, selesaiPada: t, sumber: 'aplikasi',
 })
 
+// Tiga siswa dengan nama bertanda baca/rumus untuk menguji ekspor yang aman
 const data = [
   rec('1', 'Budi, "Si" Santoso', 'SMPN 2', 14, '2026-10-21T14:32:05.123+07:00', [calc('c1', 'segitiga'), calc('c2', 'tabung')]),
   rec('2', 'Ani', 'SMPN 1', 12, '2026-10-20T09:00:00.000+07:00', [calc('c3', 'tabung')]),
@@ -55,6 +62,8 @@ describe('ekspor/impor', () => {
   it('CSV round-trip', () => {
     const csv = toCsv(data)
     expect(csv).not.toMatch(/record_id|calc_id/)
+    expect(csv).toContain('No,Nama,Sekolah,Kelas,Umur,Jenis Kelamin')
+    expect(csv).toContain('Sisi/Rusuk,Alas,Panjang Alas,Lebar Alas,Jari-jari,Tinggi')
     const strip = (rs: SessionRecord[]) => rs.map(r => ({ ...r, id: '', sumber: 'aplikasi', calculations: r.calculations.map(c => ({ ...c, id: '' })) }))
     expect(strip(parseCsv(csv))).toEqual(strip(data))
   })
@@ -63,6 +72,13 @@ describe('ekspor/impor', () => {
     expect(t).toContain('BIODATA SISWA')
     expect(t).toContain('LUAS BANGUN DATAR')
     expect(t).toContain('VOLUME BANGUN RUANG')
+  })
+  it('XLSX berisi dua lembar dan angka asli', async () => {
+    const { default: ExcelJS } = await import('exceljs')
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(await toXlsx(data))
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Biodata Siswa', 'Hasil Perhitungan'])
+    expect(wb.getWorksheet('Hasil Perhitungan')!.getRow(2).getCell(14).value).toBe(13)
   })
   it('melewati duplikat saat merge', () => {
     const r = mergeRecords(data, parseCsv(toCsv(data)))

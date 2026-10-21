@@ -1,12 +1,23 @@
+/**
+ * Pengurutan riwayat berdasarkan nama, sekolah, umur, atau waktu simpan.
+ */
 import type { SessionRecord } from '../types.ts'
 
+/** Kolom yang bisa dipakai untuk mengurutkan. */
 export type SortKey = 'nama' | 'sekolah' | 'umur' | 'selesaiPada'
+/** Arah urutan: naik (asc) atau turun (desc). */
 export type SortDir = 'asc' | 'desc'
 
+/** Label kolom untuk dropdown urutan di dashboard. */
 export const SORT_LABELS: Record<SortKey, string> = {
   nama: 'Nama', sekolah: 'Sekolah', umur: 'Umur', selesaiPada: 'Waktu simpan',
 }
 
+/**
+ * Urutkan riwayat tanpa mengubah array asli.
+ * Teks dibandingkan dengan aturan bahasa Indonesia dan tidak membedakan huruf besar/kecil;
+ * umur dan waktu dibandingkan sebagai angka.
+ */
 export function sortRecords(records: SessionRecord[], key: SortKey, dir: SortDir): SessionRecord[] {
   const m = dir === 'asc' ? 1 : -1
   const val = (r: SessionRecord): string | number => {

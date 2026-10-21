@@ -1,44 +1,45 @@
 # GeometryX
 
-Web app that helps students learn to calculate the area of flat shapes and the volume of solid shapes.
+Aplikasi web untuk membantu siswa belajar menghitung luas bangun datar dan volume bangun ruang.
 
-Students enter their biodata (name, school, class, age, gender, optional student ID), pick a shape, enter its measurements and see the result together with the formula. Finished sessions are saved in the browser and can be exported to `.txt` or `.csv`. A dashboard shows totals and percentages, and the history can be searched, sorted and re-imported from `.csv`.
+Siswa mengisi biodata (nama, sekolah, kelas, umur, jenis kelamin, dan NIS bila ada), memilih bentuk, memasukkan ukurannya, lalu melihat hasil beserta rumusnya. Sesi yang selesai disimpan di browser dan bisa diekspor ke `.txt`, `.csv`, atau `.xlsx`. Dashboard menampilkan total dan persentase, sedangkan riwayat bisa dicari, diurutkan, dan diimpor kembali dari `.csv`.
 
-- **Area (2D):** square, triangle, circle
-- **Volume (3D):** cube, pyramid (rectangular base), cylinder
-- **Export:** biodata and calculation results in separate sections, with completion date and timestamp
-- **Sorting:** by name, school, age or save time
-- **Language:** Bahasa Indonesia
+- **Luas (2D):** persegi, segitiga, lingkaran
+- **Volume (3D):** kubus, limas (alas persegi panjang), tabung
+- **Ekspor:** biodata dan hasil perhitungan di bagian terpisah, lengkap dengan tanggal dan timestamp selesai
+- **Pengurutan:** berdasarkan nama, sekolah, umur, atau waktu simpan
+- **Bahasa:** Bahasa Indonesia
 
-Built with React, TypeScript, Vite, Tailwind CSS and shadcn/ui.
+Dibangun dengan React, TypeScript, Vite, Tailwind CSS, dan shadcn/ui.
 
-## Project structure
+## Struktur proyek
 
 ```
 .
-├── index.html              Page shell and SEO metadata
-├── public/                 Favicon and robots.txt
+├── index.html              Kerangka halaman dan metadata SEO
+├── public/                 Favicon dan robots.txt
 └── src/
-    ├── main.tsx            App entry point
-    ├── App.tsx             Layout, tabs, and session/history state
-    ├── index.css           Tailwind setup and theme
-    ├── types.ts            Shared types (biodata, calculation, session record)
+    ├── main.tsx            Titik masuk aplikasi
+    ├── App.tsx             Tata letak, tab, dan state sesi/riwayat
+    ├── index.css           Pengaturan Tailwind dan tema
+    ├── types.ts            Tipe data bersama (biodata, perhitungan, sesi)
     ├── components/
-    │   ├── BiodataForm.tsx     Student biodata form
-    │   ├── Calculator.tsx      Shape picker, inputs and result
-    │   ├── SessionPanel.tsx    Current session and export actions
-    │   ├── Dashboard.tsx       Statistics, history table, import/export
-    │   ├── ShapeIcon.tsx       Shape illustrations
-    │   ├── Pilih.tsx           Select dropdown wrapper
-    │   └── ui/                 shadcn/ui components
+    │   ├── BiodataForm.tsx     Form biodata siswa
+    │   ├── Calculator.tsx      Pilihan bentuk, isian ukuran, dan hasil
+    │   ├── SessionPanel.tsx    Sesi berjalan dan tombol ekspor
+    │   ├── Dashboard.tsx       Statistik, tabel riwayat, impor/ekspor
+    │   ├── ShapeIcon.tsx       Ilustrasi bentuk
+    │   ├── Pilih.tsx           Pembungkus dropdown
+    │   └── ui/                 Komponen shadcn/ui
     └── lib/
-        ├── shapes.ts       Shape definitions, formulas and validation
-        ├── format.ts       Number, date and timestamp formatting
-        ├── storage.ts      localStorage persistence
-        ├── sort.ts         History sorting
-        ├── stats.ts        Totals and percentages
-        ├── export.ts       .txt and .csv export
-        ├── import.ts       .csv parsing and merge
-        ├── utils.ts        Class name helper
-        └── lib.test.ts     Unit tests
+        ├── shapes.ts       Definisi bentuk, rumus, dan validasi
+        ├── format.ts       Format angka, tanggal, dan timestamp
+        ├── storage.ts      Penyimpanan localStorage
+        ├── sort.ts         Pengurutan riwayat
+        ├── stats.ts        Total dan persentase
+        ├── export.ts       Ekspor .txt dan .csv
+        ├── xlsx.ts         Ekspor .xlsx (Excel)
+        ├── import.ts       Pembacaan dan penggabungan .csv
+        ├── utils.ts        Helper nama class
+        └── lib.test.ts     Pengujian unit
 ```

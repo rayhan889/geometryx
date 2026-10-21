@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileDown,
+  FileSpreadsheet,
   FileText,
   Search,
   Trash2,
@@ -20,6 +21,7 @@ import {
 } from "../lib/sort.ts";
 import { hitungStats } from "../lib/stats.ts";
 import { download, stamp, toCsv, toTxt } from "../lib/export.ts";
+import { XLSX_MIME, toXlsx } from "../lib/xlsx.ts";
 import { ImportError, mergeRecords, parseCsv } from "../lib/import.ts";
 import { formatAngka, formatTanggalJam } from "../lib/format.ts";
 import { getShape, satuanHasil } from "../lib/shapes.ts";
@@ -39,14 +41,23 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+/**
+ * Halaman dashboard: statistik, porsi perhitungan, dan riwayat sesi.
+ *
+ * Fitur riwayat: cari, urutkan (dropdown atau klik judul kolom), lihat rincian hitungan,
+ * hapus satu sesi atau semua (dengan konfirmasi), ekspor ke .txt/.csv (sesuai hasil pencarian
+ * dan urutan), dan impor file .csv (data digabung tanpa duplikat).
+ */
 interface Props {
   records: SessionRecord[];
   onChange: (r: SessionRecord[]) => void;
 }
 
+/** Format persen dengan satu desimal, mis. "33,3%". */
 const pct = (x: number) => `${formatAngka(x, 1)}%`;
 const short = (n: string) => n.replace(" (alas persegi panjang)", "");
 
+/** Kartu angka statistik; `sub` menampilkan persentase bila ada. */
 function Tile({
   label,
   value,
@@ -74,16 +85,20 @@ function Tile({
   );
 }
 
+/** `records` adalah seluruh riwayat dari App; `onChange` menyimpan perubahan (hapus / impor). */
 export function Dashboard({ records, onChange }: Props) {
+  // Pengaturan urutan, pencarian, baris yang dibuka, konfirmasi hapus, pesan impor
   const [key, setKey] = useState<SortKey>("selesaiPada");
   const [dir, setDir] = useState<SortDir>("desc");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<string | null>(null); // record id or 'all'
+  const [confirm, setConfirm] = useState<string | null>(null); // ID sesi atau 'all' yang sedang menunggu konfirmasi hapus
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Statistik dihitung ulang hanya saat riwayat berubah
   const stats = useMemo(() => hitungStats(records), [records]);
+  // Baris tabel: saring berdasarkan kata pencarian (nama/sekolah/kelas), lalu urutkan
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
     const f = t
@@ -96,6 +111,7 @@ export function Dashboard({ records, onChange }: Props) {
     return sortRecords(f, key, dir);
   }, [records, q, key, dir]);
 
+  // Klik judul kolom: kolom sama membalik arah, kolom baru mulai dari naik
   function headSort(k: SortKey) {
     if (k === key) setDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
@@ -103,11 +119,13 @@ export function Dashboard({ records, onChange }: Props) {
       setDir("asc");
     }
   }
+  // Penanda panah dan atribut aria-sort untuk kolom yang sedang dipakai mengurutkan
   const arrow = (k: SortKey) =>
     k === key ? (dir === "asc" ? " ▲" : " ▼") : "";
   const ariaSort = (k: SortKey) =>
     k === key ? (dir === "asc" ? "ascending" : "descending") : "none";
 
+  // Impor satu atau beberapa file .csv, gabungkan ke riwayat, lalu tampilkan ringkasan atau pesan error
   async function impor(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -135,6 +153,7 @@ export function Dashboard({ records, onChange }: Props) {
     }
   }
 
+  // Tombol judul kolom yang bisa diklik untuk mengurutkan
   const sortBtn = (k: SortKey, label: string) => (
     <button
       className="font-extrabold underline-offset-4 hover:underline"
@@ -298,6 +317,18 @@ export function Dashboard({ records, onChange }: Props) {
               }
             >
               <FileDown /> Ekspor .csv
+            </Button>
+            <Button
+              disabled={!rows.length}
+              onClick={async () =>
+                download(
+                  `geometryx-riwayat-${stamp()}.xlsx`,
+                  await toXlsx(rows),
+                  XLSX_MIME,
+                )
+              }
+            >
+              <FileSpreadsheet /> Ekspor .xlsx
             </Button>
             <Button
               variant="secondary"

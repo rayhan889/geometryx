@@ -6,6 +6,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+/**
+ * Dropdown pilihan (pembungkus komponen Select shadcn).
+ * Dipakai untuk jenis kelamin, satuan panjang, dan urutan riwayat.
+ * `label` jadi nama aksesibel untuk pembaca layar.
+ */
 interface Props<T extends string> {
   value: T;
   onChange: (v: T) => void;

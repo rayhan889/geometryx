@@ -8,20 +8,40 @@ import { Dashboard } from "./components/Dashboard.tsx";
 import { Alert } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+/** Dua halaman utama: kalkulator untuk siswa, dashboard untuk melihat riwayat dan statistik. */
 type Tab = "kalkulator" | "dashboard";
 
+/**
+ * Komponen utama dan pemegang state aplikasi.
+ *
+ * Alur penggunaan:
+ * 1. Siswa mengisi biodata (BiodataForm)  -> state `biodata` terisi.
+ * 2. Siswa menghitung (Calculator) dan menambahkan hasil ke sesi -> state `calcs` bertambah.
+ * 3. Siswa menekan "Selesai dan simpan" (SessionPanel) -> sesi masuk ke `records` dan localStorage,
+ *    form kembali ke biodata untuk siswa berikutnya.
+ * 4. Dashboard membaca `records` untuk statistik, riwayat, ekspor, dan impor.
+ *
+ * `biodata` dan `calcs` adalah sesi yang sedang berjalan (hilang bila halaman dimuat ulang);
+ * hanya `records` yang disimpan permanen.
+ */
 export default function App() {
+  // Halaman yang sedang dibuka
   const [tab, setTab] = useState<Tab>("kalkulator");
+  // Seluruh riwayat sesi; nilai awal dibaca dari localStorage
   const [records, setRecords] = useState<SessionRecord[]>(loadRecords);
+  // Sesi berjalan: biodata siswa (null = belum mengisi) dan perhitungannya
   const [biodata, setBiodata] = useState<Biodata | null>(null);
   const [calcs, setCalcs] = useState<Calculation[]>([]);
+  // Pesan konfirmasi setelah sesi tersimpan
   const [notice, setNotice] = useState("");
 
+  // Satu-satunya jalan mengubah riwayat: perbarui state sekaligus simpan ke localStorage
   function update(next: SessionRecord[]) {
     setRecords(next);
     saveRecords(next);
   }
 
+  // Dipanggil saat siswa menekan "Selesai dan simpan": simpan sesi lalu reset form
   function finish(r: SessionRecord) {
     update([...records, r]);
     setBiodata(null);
@@ -47,6 +67,7 @@ export default function App() {
         </Tabs>
       </header>
       <main>
+        {/* Tampilan dipilih dari state: dashboard, form biodata, atau kalkulator + panel sesi */}
         {tab === "dashboard" ? (
           <Dashboard records={records} onChange={update} />
         ) : !biodata ? (

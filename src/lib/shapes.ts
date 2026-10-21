@@ -1,23 +1,35 @@
+/**
+ * Tabel bentuk bangun datar dan bangun ruang.
+ * Satu tabel (SHAPES) menggerakkan semuanya: form input, tampilan rumus,
+ * perhitungan, dan ekspor. Untuk menambah bentuk baru, cukup tambah satu entri di sini
+ * (dan satu ikon di components/ShapeIcon.tsx).
+ */
 import type { Kategori, ShapeId, Satuan } from '../types.ts'
 
+/** Satu kolom ukuran pada form, mis. jari-jari. `key` dipakai di rumus (v.r). */
 export interface ShapeField {
   key: string
   label: string
 }
 
+/** Definisi lengkap satu bentuk. */
 export interface ShapeDef {
   id: ShapeId
   kategori: Kategori
   nama: string
   fields: ShapeField[]
+  /** Rumus dalam bentuk teks, mis. "L = ½ × a × t". */
   rumusTeks: string
-  /** Formula with the entered values substituted in. */
+  /** Rumus dengan ukuran siswa sudah dimasukkan, mis. "L = ½ × 6 × 4". */
   substitusi: (v: Record<string, number>) => string
+  /** Rumus perhitungan. Dipanggil setelah input lolos validateInput. */
   compute: (v: Record<string, number>) => number
 }
 
+/** Angka untuk tampilan rumus: koma sebagai pemisah desimal, gaya Indonesia. */
 const n = (x: number) => String(x).replace('.', ',')
 
+/** Daftar semua bentuk: 3 bangun datar (luas) dan 3 bangun ruang (volume). */
 export const SHAPES: ShapeDef[] = [
   {
     id: 'persegi', kategori: 'luas', nama: 'Persegi',
@@ -67,19 +79,25 @@ export const SHAPES: ShapeDef[] = [
   },
 ]
 
+/** Pilihan satuan panjang pada dropdown. */
 export const SATUAN: Satuan[] = ['mm', 'cm', 'm']
 
+/** Ambil definisi bentuk berdasarkan ID. Error bila ID tidak dikenal. */
 export function getShape(id: ShapeId): ShapeDef {
   const s = SHAPES.find(x => x.id === id)
   if (!s) throw new Error(`Bentuk tidak dikenal: ${id}`)
   return s
 }
 
+/** Satuan hasil: luas dipangkat dua (cm²), volume dipangkat tiga (cm³). */
 export function satuanHasil(kategori: Kategori, satuan: Satuan): string {
   return `${satuan}${kategori === 'luas' ? '²' : '³'}`
 }
 
-/** Returns null if all fields are positive finite numbers, else an error message. */
+/**
+ * Validasi input: semua ukuran harus angka valid lebih dari 0.
+ * Mengembalikan null bila valid, atau pesan error untuk ditampilkan ke siswa.
+ */
 export function validateInput(shape: ShapeDef, v: Record<string, number>): string | null {
   for (const f of shape.fields) {
     const x = v[f.key]
@@ -88,6 +106,7 @@ export function validateInput(shape: ShapeDef, v: Record<string, number>): strin
   return null
 }
 
+/** Hitung luas/volume mentah (tanpa pembulatan) untuk bentuk dan ukuran tertentu. */
 export function computeShape(id: ShapeId, v: Record<string, number>): number {
   return getShape(id).compute(v)
 }

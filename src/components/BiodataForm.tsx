@@ -8,13 +8,22 @@ import { Label } from '@/components/ui/label'
 import { Alert } from '@/components/ui/alert'
 import { Pilih } from './Pilih.tsx'
 
+/** Gaya label yang dipakai semua isian pada form. */
 const lbl = 'text-sm font-extrabold'
 
+/**
+ * Form biodata siswa; langkah pertama sebelum bisa menghitung.
+ * Validasi: nama, sekolah, kelas wajib diisi; umur bilangan bulat 4-99; NIS boleh kosong.
+ * Bila valid, biodata dikirim ke App lewat `onSubmit`.
+ */
 export function BiodataForm({ onSubmit }: { onSubmit: (b: Biodata) => void }) {
+  // Nilai semua isian disimpan sebagai teks sampai tombol ditekan
   const [f, setF] = useState({ nama: '', sekolah: '', kelas: '', umur: '', jenisKelamin: 'L' as JenisKelamin, nis: '' })
   const [err, setErr] = useState('')
+  // Pembuat handler onChange untuk satu isian
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF(p => ({ ...p, [k]: e.target.value }))
 
+  // Validasi isian lalu kirim biodata yang sudah dirapikan (spasi di tepi dibuang)
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const umur = Number(f.umur)

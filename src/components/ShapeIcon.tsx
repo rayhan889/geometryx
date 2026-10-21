@@ -1,7 +1,9 @@
 import type { ShapeId } from '../types.ts'
 
+/** Gaya garis bersama untuk semua ikon bentuk. */
 const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 3, strokeLinejoin: 'miter', strokeLinecap: 'butt' } as const
 
+/** Gambar garis sederhana untuk tiap bentuk; ukuran bisa diatur lewat `size`. */
 export function ShapeIcon({ id, size = 52 }: { id: ShapeId; size?: number }) {
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} aria-hidden="true" {...common}>

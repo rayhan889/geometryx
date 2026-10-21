@@ -20,11 +20,23 @@ import { Alert } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
+/** Nama bentuk tanpa keterangan tambahan, untuk label yang sempit. */
 const short = (n: string) => n.replace(" (alas persegi panjang)", "");
 
+/**
+ * Kalkulator luas dan volume.
+ *
+ * Alur:
+ * 1. Pilih kategori (luas / volume) dan bentuk.
+ * 2. Isi ukuran dan satuan, tekan "Hitung" -> input divalidasi lalu hasil ditampilkan beserta rumusnya.
+ * 3. Tekan "Tambahkan ke sesi" -> hasil dikirim ke App lewat `onAdd`.
+ * Semua rumus dan nama kolom diambil dari tabel SHAPES (lib/shapes.ts).
+ */
 export function Calculator({
   onAdd,
 }: Readonly<{ onAdd: (c: Calculation) => void }>) {
+  // kategori & bentuk: pilihan aktif; satuan: satuan panjang; vals: isian ukuran (teks)
+  // err: pesan error validasi; hasil: perhitungan terakhir yang belum ditambahkan ke sesi
   const [kategori, setKategori] = useState<Kategori>("luas");
   const [bentuk, setBentuk] = useState<ShapeId>("persegi");
   const [satuan, setSatuan] = useState<Satuan>("cm");
@@ -34,10 +46,12 @@ export function Calculator({
 
   const shape = getShape(bentuk);
 
+  // Ganti kategori dan otomatis pilih bentuk pertama pada kategori itu
   function pilihKategori(k: Kategori) {
     setKategori(k);
     pilihBentuk(SHAPES.find((s) => s.kategori === k)!.id);
   }
+  // Ganti bentuk dan kosongkan isian, error, serta hasil sebelumnya
   function pilihBentuk(id: ShapeId) {
     setBentuk(id);
     setVals({});
@@ -45,6 +59,7 @@ export function Calculator({
     setHasil(null);
   }
 
+  // Validasi ukuran; bila valid hitung dan tampilkan hasil, bila tidak tampilkan pesan error
   function hitung(e: React.FormEvent) {
     e.preventDefault();
     const input = Object.fromEntries(
@@ -69,6 +84,7 @@ export function Calculator({
     });
   }
 
+  // Kirim hasil ke sesi lalu kosongkan isian agar siap untuk hitungan berikutnya
   function tambah() {
     if (!hasil) return;
     onAdd(hasil);
