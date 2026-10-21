@@ -13,7 +13,7 @@ const lbl = 'text-sm font-extrabold'
 
 /**
  * Form biodata siswa; langkah pertama sebelum bisa menghitung.
- * Validasi: nama, sekolah, kelas wajib diisi; umur bilangan bulat 4-99; NIS boleh kosong.
+ * Validasi: nama, sekolah, kelas wajib diisi; umur bilangan bulat 4-100; NIS boleh kosong.
  * Bila valid, biodata dikirim ke App lewat `onSubmit`.
  */
 export function BiodataForm({ onSubmit }: { onSubmit: (b: Biodata) => void }) {
@@ -27,8 +27,10 @@ export function BiodataForm({ onSubmit }: { onSubmit: (b: Biodata) => void }) {
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const umur = Number(f.umur)
-    if (!f.nama.trim() || !f.sekolah.trim() || !f.kelas.trim()) return setErr('Nama, sekolah, dan kelas wajib diisi.')
-    if (!Number.isInteger(umur) || umur < 4 || umur > 99) return setErr('Umur harus berupa bilangan bulat antara 4 dan 99.')
+    // Pesan hanya menyebut isian yang masih kosong
+    const kosong = [['Nama', f.nama], ['sekolah', f.sekolah], ['kelas', f.kelas]].filter(([, v]) => !v.trim()).map(([k]) => k)
+    if (kosong.length) return setErr(`${kosong.length > 1 ? kosong.slice(0, -1).join(', ') + ' dan ' + kosong.at(-1) : kosong[0]} wajib diisi.`)
+    if (!f.umur.trim() || !Number.isInteger(umur) || umur < 4 || umur > 100) return setErr('Umur harus berupa bilangan bulat antara 4 dan 100.')
     setErr('')
     onSubmit({ nama: f.nama.trim(), sekolah: f.sekolah.trim(), kelas: f.kelas.trim(), umur, jenisKelamin: f.jenisKelamin, nis: f.nis.trim() })
   }
@@ -43,7 +45,7 @@ export function BiodataForm({ onSubmit }: { onSubmit: (b: Biodata) => void }) {
           <div className="grid gap-2"><Label htmlFor="sekolah" className={lbl}>Sekolah</Label><Input id="sekolah" value={f.sekolah} onChange={set('sekolah')} /></div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="grid gap-2"><Label htmlFor="kelas" className={lbl}>Kelas</Label><Input id="kelas" value={f.kelas} onChange={set('kelas')} placeholder="mis. 8A" /></div>
-            <div className="grid gap-2"><Label htmlFor="umur" className={lbl}>Umur (tahun)</Label><Input id="umur" type="number" inputMode="numeric" value={f.umur} onChange={set('umur')} /></div>
+            <div className="grid gap-2"><Label htmlFor="umur" className={lbl}>Umur (tahun)</Label><Input id="umur" type="number" inputMode="numeric" min={4} max={100} value={f.umur} onChange={set('umur')} /></div>
             <div className="grid gap-2"><span className={lbl}>Jenis kelamin</span>
               <Pilih label="Jenis kelamin" value={f.jenisKelamin} onChange={v => setF(p => ({ ...p, jenisKelamin: v }))}
                 options={[{ value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />

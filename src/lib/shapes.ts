@@ -101,7 +101,8 @@ export function satuanHasil(kategori: Kategori, satuan: Satuan): string {
 export function validateInput(shape: ShapeDef, v: Record<string, number>): string | null {
   for (const f of shape.fields) {
     const x = v[f.key]
-    if (!Number.isFinite(x) || x <= 0) return `${f.label} harus berupa angka lebih dari 0.`
+    if (!Number.isFinite(x)) return `${f.label} wajib diisi dengan angka.`
+    if (x <= 0) return `${f.label} harus lebih dari 0.`
   }
   return null
 }

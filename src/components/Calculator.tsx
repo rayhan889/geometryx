@@ -23,6 +23,17 @@ import { cn } from "@/lib/utils";
 /** Nama bentuk tanpa keterangan tambahan, untuk label yang sempit. */
 const short = (n: string) => n.replace(" (alas persegi panjang)", "");
 
+/** Buang huruf, tanda minus, dan simbol lain; sisakan angka dan satu pemisah desimal (titik/koma). */
+const bersihkanUkuran = (s: string) => {
+  const t = s.replace(/[^\d.,]/g, "");
+  const i = t.search(/[.,]/);
+  return i < 0 ? t : t.slice(0, i + 1) + t.slice(i + 1).replace(/[.,]/g, "");
+};
+
+/** Ubah isian teks jadi angka; kosong atau tidak valid menjadi NaN. */
+const parseUkuran = (s = "") =>
+  /\d/.test(s) ? Number(s.replace(",", ".")) : NaN;
+
 /**
  * Kalkulator luas dan volume.
  *
@@ -63,7 +74,7 @@ export function Calculator({
   function hitung(e: React.FormEvent) {
     e.preventDefault();
     const input = Object.fromEntries(
-      shape.fields.map((f) => [f.key, Number(vals[f.key])]),
+      shape.fields.map((f) => [f.key, parseUkuran(vals[f.key])]),
     );
     const msg = validateInput(shape, input);
     if (msg) {
@@ -145,13 +156,15 @@ export function Calculator({
                 </Label>
                 <Input
                   id={`f-${f.key}`}
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="any"
-                  min="0"
+                  autoComplete="off"
                   value={vals[f.key] ?? ""}
                   onChange={(e) =>
-                    setVals((p) => ({ ...p, [f.key]: e.target.value }))
+                    setVals((p) => ({
+                      ...p,
+                      [f.key]: bersihkanUkuran(e.target.value),
+                    }))
                   }
                 />
               </div>
