@@ -45,7 +45,7 @@ export function BiodataForm({ onSubmit }: { onSubmit: (b: Biodata) => void }) {
           <div className="grid gap-2"><Label htmlFor="sekolah" className={lbl}>Sekolah</Label><Input id="sekolah" value={f.sekolah} onChange={set('sekolah')} /></div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="grid gap-2"><Label htmlFor="kelas" className={lbl}>Kelas</Label><Input id="kelas" value={f.kelas} onChange={set('kelas')} placeholder="mis. 8A" /></div>
-            <div className="grid gap-2"><Label htmlFor="umur" className={lbl}>Umur (tahun)</Label><Input id="umur" type="number" inputMode="numeric" min={4} max={100} value={f.umur} onChange={set('umur')} /></div>
+            <div className="grid gap-2"><Label htmlFor="umur" className={lbl}>Umur (tahun)</Label><Input id="umur" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} autoComplete="off" value={f.umur} onChange={e => setF(p => ({ ...p, umur: e.target.value.replace(/\D/g, '') }))} /></div>
             <div className="grid gap-2"><span className={lbl}>Jenis kelamin</span>
               <Pilih label="Jenis kelamin" value={f.jenisKelamin} onChange={v => setF(p => ({ ...p, jenisKelamin: v }))}
                 options={[{ value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
