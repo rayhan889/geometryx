@@ -26,6 +26,7 @@ import { ImportError, mergeRecords, parseCsv } from "../lib/import.ts";
 import { formatAngka, formatTanggalJam } from "../lib/format.ts";
 import { getShape, satuanHasil } from "../lib/shapes.ts";
 import { Pilih } from "./Pilih.tsx";
+import { PengingatHapus } from "./PengingatHapus.tsx";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -248,6 +249,8 @@ export function Dashboard({ records, onChange }: Props) {
           )}
         </CardContent>
       </Card>
+
+      <PengingatHapus />
 
       <Card>
         <CardHeader>

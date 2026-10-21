@@ -105,7 +105,7 @@ export function parseCsv(text: string): SessionRecord[] {
     const satuan = (SATUAN as string[]).includes(h['Satuan Panjang']) ? (h['Satuan Panjang'] as Satuan) : 'cm'
     const c: Calculation = {
       id: newId(), kategori: kategori as Kategori, bentuk: shape.id,
-      input, satuanPanjang: satuan, rumus: h['Rumus'], hasil: nilai, waktu: h['Waktu Hitung'],
+      input, satuanPanjang: satuan, rumus: shape.rumusTeks, hasil: nilai, waktu: h['Waktu Hitung'],
     }
     const k = kunci(h['Nama'], h['Timestamp Selesai'])
     const list = calcs.get(k) ?? []

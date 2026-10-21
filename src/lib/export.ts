@@ -113,7 +113,7 @@ export function toCsv(records: SessionRecord[]): string {
   ]))
   const hasil = records.flatMap(r => r.calculations.map(c => ({ r, c }))).map(({ r, c }, i) => row([
     i + 1, safeText(r.biodata.nama), r.selesaiPada, c.kategori === 'luas' ? 'Luas' : 'Volume',
-    getShape(c.bentuk).nama, c.rumus,
+    getShape(c.bentuk).nama, safeText(c.rumus),
     ...UKURAN_COLS.map(u => c.input[u.key] ?? ''),
     c.satuanPanjang, c.hasil, satuanHasil(c.kategori, c.satuanPanjang), c.waktu,
   ]))

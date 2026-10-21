@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computeShape } from './shapes.ts'
 import { sortRecords } from './sort.ts'
 import { hitungStats } from './stats.ts'
 import { toCsv, toTxt } from './export.ts'
 import { toXlsx } from './xlsx.ts'
 import { mergeRecords, parseCsv } from './import.ts'
+import { loadRecords } from './storage.ts'
 import type { Calculation, SessionRecord } from '../types.ts'
 
 // Pengujian unit untuk rumus, pengurutan, statistik, serta ekspor/impor.
@@ -87,5 +88,18 @@ describe('ekspor/impor', () => {
   })
   it('menolak file bukan GeometryX', () => {
     expect(() => parseCsv('a,b\n1,2')).toThrow()
+  })
+})
+
+describe('penyimpanan', () => {
+  it('membuang entri localStorage yang tidak valid', () => {
+    const store: Record<string, string> = {}
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v } })
+    store['geometryx:records'] = JSON.stringify([data[0], { id: 'x' }, null, { ...data[1], calculations: [{ bentuk: 'x' }] }])
+    expect(loadRecords()).toEqual([data[0]])
+  })
+  it('rumus hasil impor tidak membawa awalan rumus spreadsheet', () => {
+    const csv = toCsv(data).replace('L = ½ × a × t', '=1+1')
+    expect(parseCsv(csv).flatMap(r => r.calculations).every(c => !c.rumus.startsWith('='))).toBe(true)
   })
 })

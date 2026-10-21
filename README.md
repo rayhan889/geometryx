@@ -10,6 +10,10 @@ Siswa mengisi biodata (nama, sekolah, kelas, umur, jenis kelamin, dan NIS bila a
 - **Pengurutan:** berdasarkan nama, sekolah, umur, atau waktu simpan
 - **Bahasa:** Bahasa Indonesia
 
+## Privasi data
+
+Semua data (termasuk nama dan NIS siswa) disimpan hanya di `localStorage` browser perangkat ini, tanpa enkripsi dan tanpa dikirim ke server mana pun. Pada komputer yang dipakai bersama, siswa berikutnya bisa melihat riwayat tersebut. Ekspor datanya bila perlu, lalu tekan **Hapus semua** di Dashboard sebelum komputer dipakai orang lain. Isi `localStorage` divalidasi saat dibaca. Entri yang rusak atau diubah manual dibuang.
+
 Dibangun dengan React, TypeScript, Vite, Tailwind CSS, dan shadcn/ui.
 
 ## Struktur proyek
