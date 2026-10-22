@@ -1,44 +1,57 @@
 /**
- * Penyimpanan riwayat di localStorage browser.
- * Data tersimpan per browser dan tetap ada setelah tab ditutup.
- * Semua akses dibungkus try/catch karena localStorage bisa diblokir
- * (mode privat, data situs dihapus); aplikasi tetap jalan tanpa penyimpanan.
+ * Klien API riwayat. Sumber kebenaran data adalah SQLite di server (lihat `server/`);
+ * semua fungsi di sini melempar `Error` bila server tidak bisa dihubungi atau menolak permintaan,
+ * supaya UI bisa menampilkan kegagalan alih-alih diam-diam kehilangan data.
  */
 import type { SessionRecord } from '../types.ts'
-import { SHAPES, SATUAN } from './shapes.ts'
+import { isRecord } from './validate.ts'
 
-/** Kunci localStorage tempat seluruh riwayat disimpan sebagai JSON. */
-const KEY = 'geometryx:records'
+/** Kunci localStorage lama, sebelum riwayat dipindah ke SQLite. */
+const LEGACY_KEY = 'geometryx:records'
 
-const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
-const isStr = (v: unknown): v is string => typeof v === 'string'
-const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-
-/** Periksa satu perhitungan: bentuk dikenal, ukuran sesuai `fields` bentuknya, semua angka terhingga. */
-function isCalculation(v: unknown): boolean {
-  if (!isObj(v) || !isStr(v.id) || !isStr(v.rumus) || !isStr(v.waktu) || !isNum(v.hasil)) return false
-  if (v.kategori !== 'luas' && v.kategori !== 'volume') return false
-  if (!(SATUAN as unknown[]).includes(v.satuanPanjang)) return false
-  const shape = SHAPES.find(s => s.id === v.bentuk)
-  if (!shape || !isObj(v.input)) return false
-  const input = v.input
-  return shape.fields.every(f => isNum(input[f.key]))
-}
-
-/** Periksa satu sesi siswa. localStorage bisa diubah sembarang orang, jadi isinya tidak dipercaya begitu saja. */
-function isRecord(v: unknown): v is SessionRecord {
-  if (!isObj(v) || !isStr(v.id) || !isStr(v.selesaiPada) || Number.isNaN(Date.parse(v.selesaiPada))) return false
-  if (v.sumber !== 'aplikasi' && v.sumber !== 'impor') return false
-  const b = v.biodata
-  if (!isObj(b) || !isStr(b.nama) || !isStr(b.sekolah) || !isStr(b.kelas) || !isStr(b.nis) || !isNum(b.umur)) return false
-  if (b.jenisKelamin !== 'L' && b.jenisKelamin !== 'P') return false
-  return Array.isArray(v.calculations) && v.calculations.every(isCalculation)
-}
-
-/** Baca riwayat. Mengembalikan array kosong bila belum ada, rusak, atau tidak bisa dibaca; entri tidak valid dibuang. */
-export function loadRecords(): SessionRecord[] {
+async function request(method: string, url: string, body?: unknown): Promise<Response> {
+  let res: Response
   try {
-    const raw = localStorage.getItem(KEY)
+    res = await fetch(url, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new Error('Server tidak dapat dihubungi.')
+  }
+  if (!res.ok) {
+    const msg = ((await res.json().catch(() => null)) as { error?: string } | null)?.error
+    throw new Error(msg ?? `Permintaan gagal (${res.status}).`)
+  }
+  return res
+}
+
+export async function loadRecords(): Promise<SessionRecord[]> {
+  return (await request('GET', '/api/records')).json()
+}
+
+export async function addRecord(r: SessionRecord): Promise<void> {
+  await request('POST', '/api/records', r)
+}
+
+/** Simpan banyak sesi sekaligus; duplikat dilewati oleh server. */
+export async function importRecords(records: SessionRecord[]): Promise<{ inserted: number; skipped: number }> {
+  return (await request('POST', '/api/records/bulk', { records })).json()
+}
+
+export async function removeRecord(id: string): Promise<void> {
+  await request('DELETE', `/api/records/${encodeURIComponent(id)}`)
+}
+
+export async function clearRecords(): Promise<void> {
+  await request('DELETE', '/api/records')
+}
+
+/** Riwayat lama di localStorage (entri tidak valid dibuang). Kosong bila tidak ada atau tidak bisa dibaca. */
+export function readLegacyRecords(): SessionRecord[] {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY)
     if (!raw) return []
     const data: unknown = JSON.parse(raw)
     return Array.isArray(data) ? data.filter(isRecord) : []
@@ -47,11 +60,19 @@ export function loadRecords(): SessionRecord[] {
   }
 }
 
-/** Simpan seluruh riwayat. Dipanggil setiap kali riwayat berubah (simpan, impor, hapus). */
-export function saveRecords(records: SessionRecord[]): void {
+/**
+ * Pindahkan riwayat localStorage ke SQLite sekali saja. Kunci lama dihapus hanya setelah
+ * server mengonfirmasi bahwa semua sesi tersimpan atau sudah ada (inserted + skipped = jumlah kirim).
+ */
+export async function migrateLegacyRecords(): Promise<void> {
+  const legacy = readLegacyRecords()
   try {
-    localStorage.setItem(KEY, JSON.stringify(records))
+    if (legacy.length) {
+      const { inserted, skipped } = await importRecords(legacy)
+      if (inserted + skipped !== legacy.length) return
+    }
+    if (localStorage.getItem(LEGACY_KEY) !== null) localStorage.removeItem(LEGACY_KEY)
   } catch {
-    // Penyimpanan tidak tersedia (mode privat / kuota penuh): data hanya ada di memori
+    // Server belum siap atau localStorage diblokir: coba lagi pada pemuatan berikutnya
   }
 }
