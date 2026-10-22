@@ -2,7 +2,7 @@
 
 Aplikasi web untuk membantu siswa belajar menghitung luas bangun datar dan volume bangun ruang.
 
-Siswa mengisi biodata (nama, sekolah, kelas, umur, jenis kelamin, dan NIS bila ada), memilih bentuk, memasukkan ukurannya, lalu melihat hasil beserta rumusnya. Sesi yang selesai disimpan di browser dan bisa diekspor ke `.txt`, `.csv`, atau `.xlsx`. Dashboard menampilkan total dan persentase, sedangkan riwayat bisa dicari, diurutkan, dan diimpor kembali dari `.csv`.
+Siswa mengisi biodata (nama, sekolah, kelas, umur, jenis kelamin, dan NIS bila ada), memilih bentuk, memasukkan ukurannya, lalu melihat hasil beserta rumusnya. Sesi yang selesai disimpan di database SQLite di server dan bisa diekspor ke `.txt`, `.csv`, atau `.xlsx`. Dashboard menampilkan total dan persentase, sedangkan riwayat bisa dicari, diurutkan, dan diimpor kembali dari `.csv`.
 
 - **Luas (2D):** persegi, segitiga, lingkaran
 - **Volume (3D):** kubus, limas (alas persegi panjang), tabung
@@ -10,9 +10,21 @@ Siswa mengisi biodata (nama, sekolah, kelas, umur, jenis kelamin, dan NIS bila a
 - **Pengurutan:** berdasarkan nama, sekolah, umur, atau waktu simpan
 - **Bahasa:** Bahasa Indonesia
 
+## Menjalankan
+
+```
+bun install
+bun run build && bun run start   # server + aplikasi di http://127.0.0.1:3001
+bun run dev:server               # pengembangan: API di :3001 (database: data/geometryx.db)
+bun run dev                      # pengembangan: Vite, /api diteruskan ke :3001
+bun run test                     # vitest + bun test (server)
+```
+
+Env server: `PORT` (3001), `HOST` (127.0.0.1), `DB_PATH` (`data/geometryx.db`). Berkas database (dan `-wal`/`-shm`) perlu disimpan di volume permanen dan dicadangkan.
+
 ## Privasi data
 
-Semua data (termasuk nama dan NIS siswa) disimpan hanya di `localStorage` browser perangkat ini, tanpa enkripsi dan tanpa dikirim ke server mana pun. Pada komputer yang dipakai bersama, siswa berikutnya bisa melihat riwayat tersebut. Ekspor datanya bila perlu, lalu tekan **Hapus semua** di Dashboard sebelum komputer dipakai orang lain. Isi `localStorage` divalidasi saat dibaca. Entri yang rusak atau diubah manual dibuang.
+Semua data (termasuk nama dan NIS siswa) disimpan di SQLite pada server, tanpa enkripsi. Aplikasi hanya mendengarkan `127.0.0.1` secara bawaan karena API belum punya autentikasi; jangan membukanya ke jaringan umum tanpa menambahkan autentikasi. Server memvalidasi semua data sebelum disimpan. Riwayat lama di `localStorage` dipindahkan ke database sekali saat aplikasi dibuka, lalu dihapus dari browser.
 
 Dibangun dengan React, TypeScript, Vite, Tailwind CSS, dan shadcn/ui.
 
@@ -22,6 +34,11 @@ Dibangun dengan React, TypeScript, Vite, Tailwind CSS, dan shadcn/ui.
 .
 ├── index.html              Kerangka halaman dan metadata SEO
 ├── public/                 Favicon dan robots.txt
+├── server/                 API riwayat (Bun) dan SQLite
+│   ├── index.ts            Titik masuk server
+│   ├── app.ts              Rute /api dan file statis dist/
+│   ├── db.ts               Skema dan query SQLite
+│   └── db.test.ts          Pengujian API (bun test)
 └── src/
     ├── main.tsx            Titik masuk aplikasi
     ├── App.tsx             Tata letak, tab, dan state sesi/riwayat
@@ -38,7 +55,8 @@ Dibangun dengan React, TypeScript, Vite, Tailwind CSS, dan shadcn/ui.
     └── lib/
         ├── shapes.ts       Definisi bentuk, rumus, dan validasi
         ├── format.ts       Format angka, tanggal, dan timestamp
-        ├── storage.ts      Penyimpanan localStorage
+        ├── storage.ts      Klien API riwayat dan migrasi localStorage
+        ├── validate.ts     Validasi data riwayat (klien dan server)
         ├── sort.ts         Pengurutan riwayat
         ├── stats.ts        Total dan persentase
         ├── export.ts       Ekspor .txt dan .csv

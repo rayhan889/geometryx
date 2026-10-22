@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Biodata, Calculation, SessionRecord } from "./types.ts";
-import { loadRecords, saveRecords } from "./lib/storage.ts";
+import {
+  addRecord,
+  clearRecords,
+  importRecords,
+  loadRecords,
+  migrateLegacyRecords,
+  removeRecord,
+} from "./lib/storage.ts";
 import { BiodataForm } from "./components/BiodataForm.tsx";
 import { Calculator } from "./components/Calculator.tsx";
 import { SessionPanel } from "./components/SessionPanel.tsx";
@@ -17,37 +24,56 @@ type Tab = "kalkulator" | "dashboard";
  * Alur penggunaan:
  * 1. Siswa mengisi biodata (BiodataForm)  -> state `biodata` terisi.
  * 2. Siswa menghitung (Calculator) dan menambahkan hasil ke sesi -> state `calcs` bertambah.
- * 3. Siswa menekan "Selesai dan simpan" (SessionPanel) -> sesi masuk ke `records` dan localStorage,
+ * 3. Siswa menekan "Selesai dan simpan" (SessionPanel) -> sesi disimpan ke SQLite lewat API lalu masuk ke `records`,
  *    form kembali ke biodata untuk siswa berikutnya.
  * 4. Dashboard membaca `records` untuk statistik, riwayat, ekspor, dan impor.
  *
  * `biodata` dan `calcs` adalah sesi yang sedang berjalan (hilang bila halaman dimuat ulang);
- * hanya `records` yang disimpan permanen.
+ * hanya `records` yang disimpan permanen (di SQLite; state `records` hanyalah salinan dari server).
  */
 export default function App() {
   // Halaman yang sedang dibuka
   const [tab, setTab] = useState<Tab>("kalkulator");
-  // Seluruh riwayat sesi; nilai awal dibaca dari localStorage
-  const [records, setRecords] = useState<SessionRecord[]>(loadRecords);
+  // Salinan riwayat dari server (SQLite); null = belum selesai dimuat
+  const [records, setRecords] = useState<SessionRecord[] | null>(null);
   // Sesi berjalan: biodata siswa (null = belum mengisi) dan perhitungannya
   const [biodata, setBiodata] = useState<Biodata | null>(null);
   const [calcs, setCalcs] = useState<Calculation[]>([]);
-  // Pesan konfirmasi setelah sesi tersimpan
+  // Pesan konfirmasi setelah sesi tersimpan, dan pesan error dari server
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
 
-  // Satu-satunya jalan mengubah riwayat: perbarui state sekaligus simpan ke localStorage
-  function update(next: SessionRecord[]) {
-    setRecords(next);
-    saveRecords(next);
+  // Muat riwayat dari server; riwayat lama di localStorage dipindahkan lebih dulu (sekali saja)
+  useEffect(() => {
+    migrateLegacyRecords()
+      .then(loadRecords)
+      .then(setRecords)
+      .catch((e: Error) => setError(e.message));
+  }, []);
+
+  // Jalankan perubahan di server; state hanya diubah bila server berhasil, agar tampilan tidak menyimpang dari database
+  async function run(action: () => Promise<void>, onOk: () => void) {
+    try {
+      await action();
+      setError("");
+      onOk();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Terjadi kesalahan.");
+    }
   }
 
   // Dipanggil saat siswa menekan "Selesai dan simpan": simpan sesi lalu reset form
   function finish(r: SessionRecord) {
-    update([...records, r]);
-    setBiodata(null);
-    setCalcs([]);
-    setNotice(
-      `Sesi ${r.biodata.nama} tersimpan. Lihat di Dashboard dan riwayat.`,
+    return run(
+      () => addRecord(r),
+      () => {
+        setRecords((p) => [...(p ?? []), r]);
+        setBiodata(null);
+        setCalcs([]);
+        setNotice(
+          `Sesi ${r.biodata.nama} tersimpan. Lihat di Dashboard dan riwayat.`,
+        );
+      },
     );
   }
 
@@ -69,9 +95,34 @@ export default function App() {
       <main>
         {/* Tampilan dipilih dari state: dashboard, form biodata, atau kalkulator + panel sesi */}
         {tab === "dashboard" ? (
-          <Dashboard records={records} onChange={update} />
+          records === null ? (
+            <Alert variant={error ? "destructive" : "default"}>
+              {error || "Memuat riwayat..."}
+            </Alert>
+          ) : (
+            <div className="grid gap-5">
+              {error && <Alert variant="destructive">{error}</Alert>}
+              <Dashboard
+                records={records}
+                onImport={async (incoming) => {
+                  const res = await importRecords(incoming);
+                  setRecords(await loadRecords());
+                  setError("");
+                  return res;
+                }}
+                onRemove={(id) =>
+                  run(
+                    () => removeRecord(id),
+                    () => setRecords((p) => p?.filter((x) => x.id !== id) ?? p),
+                  )
+                }
+                onClear={() => run(clearRecords, () => setRecords([]))}
+              />
+            </div>
+          )
         ) : !biodata ? (
           <div className="grid gap-5">
+            {error && <Alert variant="destructive">{error}</Alert>}
             {notice && <Alert>{notice}</Alert>}
             <BiodataForm
               onSubmit={(b) => {

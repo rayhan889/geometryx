@@ -5,7 +5,7 @@ import { hitungStats } from './stats.ts'
 import { toCsv, toTxt } from './export.ts'
 import { toXlsx } from './xlsx.ts'
 import { mergeRecords, parseCsv } from './import.ts'
-import { loadRecords } from './storage.ts'
+import { migrateLegacyRecords, readLegacyRecords } from './storage.ts'
 import type { Calculation, SessionRecord } from '../types.ts'
 
 // Pengujian unit untuk rumus, pengurutan, statistik, serta ekspor/impor.
@@ -92,11 +92,27 @@ describe('ekspor/impor', () => {
 })
 
 describe('penyimpanan', () => {
-  it('membuang entri localStorage yang tidak valid', () => {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v } })
-    store['geometryx:records'] = JSON.stringify([data[0], { id: 'x' }, null, { ...data[1], calculations: [{ bentuk: 'x' }] }])
-    expect(loadRecords()).toEqual([data[0]])
+  const stubStorage = (store: Record<string, string>) => vi.stubGlobal('localStorage', {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => { store[k] = v },
+    removeItem: (k: string) => { delete store[k] },
+  })
+  it('membuang entri localStorage lama yang tidak valid', () => {
+    stubStorage({ 'geometryx:records': JSON.stringify([data[0], { id: 'x' }, null, { ...data[1], calculations: [{ bentuk: 'x' }] }]) })
+    expect(readLegacyRecords()).toEqual([data[0]])
+  })
+  it('migrasi menghapus kunci lama hanya setelah server mengonfirmasi jumlahnya', async () => {
+    const store: Record<string, string> = { 'geometryx:records': JSON.stringify([data[0]]) }
+    stubStorage(store)
+    vi.stubGlobal('fetch', async () => Response.json({ inserted: 0, skipped: 0 }))
+    await migrateLegacyRecords()
+    expect(store['geometryx:records']).toBeDefined()
+    vi.stubGlobal('fetch', async () => { throw new Error('offline') })
+    await migrateLegacyRecords()
+    expect(store['geometryx:records']).toBeDefined()
+    vi.stubGlobal('fetch', async () => Response.json({ inserted: 1, skipped: 0 }))
+    await migrateLegacyRecords()
+    expect(store['geometryx:records']).toBeUndefined()
   })
   it('rumus hasil impor tidak membawa awalan rumus spreadsheet', () => {
     const csv = toCsv(data).replace('L = ½ × a × t', '=1+1')

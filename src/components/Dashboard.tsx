@@ -22,7 +22,7 @@ import {
 import { hitungStats } from "../lib/stats.ts";
 import { download, stamp, toCsv, toTxt } from "../lib/export.ts";
 import { XLSX_MIME, toXlsx } from "../lib/xlsx.ts";
-import { ImportError, mergeRecords, parseCsv } from "../lib/import.ts";
+import { parseCsv } from "../lib/import.ts";
 import { formatAngka, formatTanggalJam } from "../lib/format.ts";
 import { getShape, satuanHasil } from "../lib/shapes.ts";
 import { Pilih } from "./Pilih.tsx";
@@ -51,7 +51,10 @@ import { cn } from "@/lib/utils";
  */
 interface Props {
   records: SessionRecord[];
-  onChange: (r: SessionRecord[]) => void;
+  /** Kirim sesi hasil impor ke server; duplikat dilewati. Melempar Error bila server menolak. */
+  onImport: (r: SessionRecord[]) => Promise<{ inserted: number; skipped: number }>;
+  onRemove: (id: string) => Promise<void>;
+  onClear: () => Promise<void>;
 }
 
 /** Format persen dengan satu desimal, mis. "33,3%". */
@@ -86,8 +89,8 @@ function Tile({
   );
 }
 
-/** `records` adalah seluruh riwayat dari App; `onChange` menyimpan perubahan (hapus / impor). */
-export function Dashboard({ records, onChange }: Props) {
+/** `records` adalah seluruh riwayat dari App; `onImport`, `onRemove`, dan `onClear` mengubahnya lewat server. */
+export function Dashboard({ records, onImport, onRemove, onClear }: Props) {
   // Pengaturan urutan, pencarian, baris yang dibuka, konfirmasi hapus, pesan impor
   const [key, setKey] = useState<SortKey>("selesaiPada");
   const [dir, setDir] = useState<SortDir>("desc");
@@ -130,26 +133,19 @@ export function Dashboard({ records, onChange }: Props) {
   async function impor(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    let all = records,
-      tambah = 0,
-      dup = 0;
     try {
-      for (const f of files) {
-        const r = mergeRecords(all, parseCsv(await f.text()));
-        all = r.merged;
-        tambah += r.ditambah;
-        dup += r.duplikat;
-      }
-      onChange(all);
+      const incoming = [];
+      for (const f of files) incoming.push(...parseCsv(await f.text()));
+      const { inserted, skipped } = await onImport(incoming);
       setMsg({
         ok: true,
-        text: `${tambah} record diimpor, ${dup} duplikat dilewati.`,
+        text: `${inserted} record diimpor, ${skipped} duplikat dilewati.`,
       });
     } catch (err) {
       setMsg({
         ok: false,
         text:
-          err instanceof ImportError ? err.message : "Gagal membaca file CSV.",
+          err instanceof Error ? err.message : "Gagal membaca file CSV.",
       });
     }
   }
@@ -352,7 +348,7 @@ export function Dashboard({ records, onChange }: Props) {
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    onChange([]);
+                    void onClear();
                     setConfirm(null);
                     setMsg(null);
                   }}
@@ -450,9 +446,7 @@ export function Dashboard({ records, onChange }: Props) {
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => {
-                                  onChange(
-                                    records.filter((x) => x.id !== r.id),
-                                  );
+                                  void onRemove(r.id);
                                   setConfirm(null);
                                 }}
                               >
